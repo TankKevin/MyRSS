@@ -16,7 +16,7 @@ try:
         render_html_body,
         send_email,
     )
-    from .rss_fetcher import fetch_entries, filter_previous_day
+    from .rss_fetcher import fetch_entries
 except ImportError:
     # Allow running via `python rss_mailer/runner.py`
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -27,7 +27,7 @@ except ImportError:
         render_html_body,
         send_email,
     )
-    from rss_mailer.rss_fetcher import fetch_entries, filter_previous_day  # type: ignore
+    from rss_mailer.rss_fetcher import fetch_entries  # type: ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,9 +51,13 @@ def main() -> int:
         return 1
 
     now_utc = datetime.now(timezone.utc)
-    target_date = (now_utc - timedelta(days=12)).date()
-    entries = filter_previous_day(entries, now=now_utc)
-    target_date_str = target_date.isoformat()
+    window_start = now_utc - timedelta(days=1)
+    entries = [
+        item
+        for item in entries
+        if (published_dt := item.get("published_dt")) and window_start <= published_dt <= now_utc
+    ]
+    target_date_str = f"{window_start.isoformat()} to {now_utc.isoformat()}"
 
     body = format_email_body(entries, target_date=target_date_str)
     html_body = render_html_body(entries, target_date=target_date_str)
