@@ -44,23 +44,32 @@ def main() -> int:
         logger.error("Configuration error: %s", exc)
         return 1
 
-    try:
-        entries = fetch_entries(settings.rss_url, settings.entry_limit, verify_ssl=settings.rss_verify_ssl)
-    except Exception as exc:
-        logger.error("Failed to fetch RSS feed: %s", exc)
-        return 1
-
     now_utc = datetime.now(timezone.utc)
     window_start = now_utc - timedelta(days=1)
-    entries = [
-        item
-        for item in entries
-        if (published_dt := item.get("published_dt")) and window_start <= published_dt <= now_utc
-    ]
+    feed_entries = []
+
+    for feed in settings.feeds:
+        try:
+            entries = fetch_entries(feed.url, settings.entry_limit, verify_ssl=settings.rss_verify_ssl)
+        except Exception as exc:
+            logger.error("Failed to fetch RSS feed '%s' (%s): %s", feed.name, feed.url, exc)
+            continue
+
+        filtered = [
+            item
+            for item in entries
+            if (published_dt := item.get("published_dt")) and window_start <= published_dt <= now_utc
+        ]
+        feed_entries.append((feed.name, filtered))
+
+    if not feed_entries:
+        logger.error("No RSS feeds were fetched successfully.")
+        return 1
+
     target_date_str = f"{window_start.isoformat()} to {now_utc.isoformat()}"
 
-    body = format_email_body(entries, target_date=target_date_str)
-    html_body = render_html_body(entries, target_date=target_date_str)
+    body = format_email_body(feed_entries, target_date=target_date_str)
+    html_body = render_html_body(feed_entries, target_date=target_date_str)
     message = build_email(
         subject=settings.email_subject,
         sender=settings.email_from,

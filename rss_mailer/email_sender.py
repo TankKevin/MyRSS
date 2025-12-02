@@ -3,42 +3,59 @@ from __future__ import annotations
 import os
 import smtplib
 from email.message import EmailMessage
-from typing import Iterable
+from typing import Iterable, List, Tuple
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 from .rss_fetcher import RssItem
 
 
-def format_email_body(entries: Iterable[RssItem], target_date: str | None = None) -> str:
+def format_email_body(
+    feed_entries: Iterable[Tuple[str, Iterable[RssItem]]],
+    target_date: str | None = None,
+) -> str:
     """Plain-text fallback body."""
+    feeds: List[Tuple[str, List[RssItem]]] = [
+        (name, list(entries)) for name, entries in feed_entries
+    ]
     lines: list[str] = []
     if target_date:
         lines.append(f"Entries for {target_date} (UTC)")
         lines.append("")
-    for index, item in enumerate(entries, start=1):
-        title = item.get("title") or "(no title)"
-        link = item.get("link") or ""
-        published = item.get("published")
-        summary = item.get("summary")
+    has_items = False
+    for feed_name, entries in feeds:
+        lines.append(f"[{feed_name}]")
+        if entries:
+            has_items = True
+            for index, item in enumerate(entries, start=1):
+                title = item.get("title") or "(no title)"
+                link = item.get("link") or ""
+                published = item.get("published")
+                summary = item.get("summary")
 
-        lines.append(f"{index}. {title}")
-        if published:
-            lines.append(f"   Published: {published}")
-        if summary:
-            lines.append(f"   Summary: {summary}")
-        if link:
-            lines.append(f"   Link: {link}")
-        lines.append("")  # blank line between entries
+                lines.append(f"{index}. {title}")
+                if published:
+                    lines.append(f"   Published: {published}")
+                if summary:
+                    lines.append(f"   Summary: {summary}")
+                if link:
+                    lines.append(f"   Link: {link}")
+                lines.append("")
+        else:
+            lines.append("   No entries in this window.")
+            lines.append("")
 
-    if not lines or lines == ["", ""]:
-        lines = []
-    if not lines:
+    if not has_items and not feeds:
+        lines.append("No new entries found.")
+    elif not has_items:
         lines.append("No new entries found.")
     return "\n".join(lines)
 
 
-def render_html_body(entries: Iterable[RssItem], target_date: str | None = None) -> str | None:
+def render_html_body(
+    feed_entries: Iterable[Tuple[str, Iterable[RssItem]]],
+    target_date: str | None = None,
+) -> str | None:
     """Render HTML body with Jinja2 template (rss_mailer/templates/email.html)."""
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
     env = Environment(
@@ -50,8 +67,10 @@ def render_html_body(entries: Iterable[RssItem], target_date: str | None = None)
     except TemplateNotFound:
         return None
 
-    entries_list = list(entries)
-    return template.render(entries=entries_list, target_date=target_date)
+    feeds_list: List[Tuple[str, List[RssItem]]] = [
+        (name, list(entries)) for name, entries in feed_entries
+    ]
+    return template.render(feeds=feeds_list, target_date=target_date)
 
 
 def build_email(

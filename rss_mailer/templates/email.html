@@ -11,6 +11,8 @@
         .header h1 { margin: 0; font-size: 22px; font-weight: 700; }
         .header .sub { margin-top: 6px; font-size: 13px; color: rgba(255,255,255,0.8); }
         .content { padding: 20px 24px 8px 24px; }
+        .feed { padding: 8px 0 4px; }
+        .feed-title { font-size: 15px; font-weight: 700; margin: 10px 0 4px; color: #0f172a; }
         .entry { border-bottom: 1px solid #e5e7eb; padding: 14px 0; }
         .entry:last-child { border-bottom: none; }
         .entry-title { font-size: 17px; margin: 0 0 6px; color: #0f172a; }
@@ -36,18 +38,27 @@
             {% endif %}
         </div>
         <div class="content">
-            {% if entries and entries|length > 0 %}
-                {% for item in entries %}
-                    <div class="entry">
-                        <h2 class="entry-title">
-                            {% if item.link %}<a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                            {% else %}{{ item.title }}{% endif %}
-                        </h2>
-                        {% if item.published %}
-                            <div class="meta">发布时间（UTC）：{{ item.published }}</div>
-                        {% endif %}
-                        {% if item.summary %}
-                            <div class="summary">{{ item.summary|safe }}</div>
+            {% if feeds and feeds|length > 0 %}
+                {% for feed, items in feeds %}
+                    <div class="feed">
+                        <div class="feed-title">{{ feed }}</div>
+                        {% if items and items|length > 0 %}
+                            {% for item in items %}
+                                <div class="entry">
+                                    <h2 class="entry-title">
+                                        {% if item.link %}<a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+                                        {% else %}{{ item.title }}{% endif %}
+                                    </h2>
+                                    {% if item.published %}
+                                        <div class="meta">发布时间（UTC）：{{ item.published }}</div>
+                                    {% endif %}
+                                    {% if item.summary %}
+                                        <div class="summary">{{ item.summary|safe }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty">该时间窗口内没有新条目。</div>
                         {% endif %}
                     </div>
                 {% endfor %}

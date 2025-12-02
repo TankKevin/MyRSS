@@ -19,8 +19,42 @@ def _get_bool(name: str, default: bool) -> bool:
 
 
 @dataclass
+class FeedConfig:
+    name: str
+    url: str
+
+
+def _parse_feeds(raw: str) -> list[FeedConfig]:
+    """
+    Parse RSS_FEEDS format:
+    - Comma- or newline-separated items.
+    - Each item: name|url (name required to label the feed in emails).
+    """
+    feeds: list[FeedConfig] = []
+    # Support newline-separated (easier in .env) and comma-separated (single-line).
+    parts = []
+    for line in raw.replace(",", "\n").splitlines():
+        item = line.strip()
+        if item:
+            parts.append(item)
+
+    for item in parts:
+        if "|" not in item:
+            raise ValueError(f"Invalid RSS_FEEDS entry (expect name|url): {item}")
+        name, url = item.split("|", 1)
+        name = name.strip()
+        url = url.strip()
+        if not name or not url:
+            raise ValueError(f"Invalid RSS_FEEDS entry (empty name or url): {item}")
+        feeds.append(FeedConfig(name=name, url=url))
+    if not feeds:
+        raise ValueError("RSS_FEEDS is set but parsed as empty")
+    return feeds
+
+
+@dataclass
 class Settings:
-    rss_url: str
+    feeds: list[FeedConfig]
     rss_verify_ssl: bool
     smtp_host: str
     smtp_port: int
@@ -35,7 +69,14 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        rss_url = _require_env("RSS_FEED_URL")
+        rss_feeds_raw = os.getenv("RSS_FEEDS")
+        if rss_feeds_raw:
+            feeds = _parse_feeds(rss_feeds_raw)
+        else:
+            rss_url = _require_env("RSS_FEED_URL")
+            default_name = os.getenv("RSS_FEED_NAME", "RSS")
+            feeds = [FeedConfig(name=default_name, url=rss_url)]
+
         rss_verify_ssl = _get_bool("RSS_VERIFY_SSL", True)
         smtp_host = _require_env("SMTP_HOST")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
@@ -54,7 +95,7 @@ class Settings:
         smtp_ssl = _get_bool("SMTP_SSL", False)
 
         return cls(
-            rss_url=rss_url,
+            feeds=feeds,
             rss_verify_ssl=rss_verify_ssl,
             smtp_host=smtp_host,
             smtp_port=smtp_port,

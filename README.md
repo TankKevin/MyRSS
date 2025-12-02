@@ -13,7 +13,10 @@ pip install -r requirements.txt
 
 2) 配置环境变量（可写入 `.env`，程序会自动读取；或直接 `export`）
 ```
+RSS_FEEDS="Tech|https://example.com/feed.xml,News|https://example.com/news.xml"  # 多个源：用逗号或换行分隔，每项 name|url
+# 若仅单个源，也可继续用旧变量：
 RSS_FEED_URL=https://example.com/feed.xml
+RSS_FEED_NAME=Tech                                # 可选，默认“RSS”
 RSS_VERIFY_SSL=true                # 如源站证书异常可设为 false（不安全）
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
