@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日 RSS 摘要</title>
+    <style>
+        body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1f2933; background: #f7f9fb; margin: 0; padding: 0; }
+        .container { max-width: 700px; margin: 24px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; padding: 20px 24px; }
+        .header h1 { margin: 0; font-size: 22px; font-weight: 700; }
+        .header .sub { margin-top: 6px; font-size: 13px; color: rgba(255,255,255,0.8); }
+        .content { padding: 20px 24px 8px 24px; }
+        .entry { border-bottom: 1px solid #e5e7eb; padding: 14px 0; }
+        .entry:last-child { border-bottom: none; }
+        .entry-title { font-size: 17px; margin: 0 0 6px; color: #0f172a; }
+        .entry-title a { color: #2563eb; text-decoration: none; }
+        .entry-title a:hover { text-decoration: underline; }
+        .meta { font-size: 12px; color: #6b7280; margin-bottom: 6px; }
+        .summary { font-size: 14px; color: #374151; line-height: 1.5; }
+        .empty { padding: 24px 0; text-align: center; color: #6b7280; }
+        .footer { padding: 16px 24px 20px; font-size: 12px; color: #9ca3af; background: #f9fafb; }
+        @media (max-width: 600px) {
+            .container { margin: 0; border-radius: 0; }
+            .content { padding: 16px; }
+            .header { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>每日 RSS 摘要</h1>
+            {% if target_date %}
+            <div class="sub">日期 (UTC)：{{ target_date }}</div>
+            {% endif %}
+        </div>
+        <div class="content">
+            {% if entries and entries|length > 0 %}
+                {% for item in entries %}
+                    <div class="entry">
+                        <h2 class="entry-title">
+                            {% if item.link %}<a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
+                            {% else %}{{ item.title }}{% endif %}
+                        </h2>
+                        {% if item.published %}
+                            <div class="meta">发布时间（UTC）：{{ item.published }}</div>
+                        {% endif %}
+                        {% if item.summary %}
+                            <div class="summary">{{ item.summary|safe }}</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty">暂无符合日期的条目。</div>
+            {% endif %}
+        </div>
+        <div class="footer">
+            本邮件由 RSS 抓取器自动发送，请勿直接回复。
+        </div>
+    </div>
+</body>
+</html>
