@@ -20,6 +20,7 @@ RSS_FEED_NAME=Tech                                # Optional, defaults to "RSS"
 RSS_VERIFY_SSL=true                # Set to false if the feed has certificate issues (less secure)
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
+EMAIL_FROM_NAME=Kevin Tan               # Optional, display name for the From header
 SMTP_USERNAME=your_smtp_user        # Optional, leave blank if the server does not require authentication
 SMTP_PASSWORD=your_smtp_password    # Optional
 SMTP_STARTTLS=true                  # Enable STARTTLS, default is true

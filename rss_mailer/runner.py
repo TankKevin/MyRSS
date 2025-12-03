@@ -73,6 +73,7 @@ def main() -> int:
     message = build_email(
         subject=settings.email_subject,
         sender=settings.email_from,
+        sender_name=settings.email_from_name,
         recipients=settings.email_to,
         text_body=body,
         html_body=html_body,

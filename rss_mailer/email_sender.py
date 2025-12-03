@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import smtplib
 from email.message import EmailMessage
+from email.utils import formataddr
 from typing import Iterable, List, Tuple
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
@@ -76,13 +77,14 @@ def render_html_body(
 def build_email(
     subject: str,
     sender: str,
+    sender_name: str | None,
     recipients: list[str],
     text_body: str,
     html_body: str | None = None,
 ) -> EmailMessage:
     message = EmailMessage()
     message["Subject"] = subject
-    message["From"] = sender
+    message["From"] = formataddr((sender_name or "", sender))
     message["To"] = ", ".join(recipients)
     message.set_content(text_body)
     if html_body:

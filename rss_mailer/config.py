@@ -59,6 +59,7 @@ class Settings:
     smtp_host: str
     smtp_port: int
     email_from: str
+    email_from_name: str | None
     email_to: list[str]
     smtp_username: str | None
     smtp_password: str | None
@@ -81,6 +82,7 @@ class Settings:
         smtp_host = _require_env("SMTP_HOST")
         smtp_port = int(os.getenv("SMTP_PORT", "587"))
         email_from = _require_env("EMAIL_FROM")
+        email_from_name = os.getenv("EMAIL_FROM_NAME", "Kevin Tan")
         to_raw = _require_env("EMAIL_TO")
         email_to = [addr.strip() for addr in to_raw.split(",") if addr.strip()]
         if not email_to:
@@ -100,6 +102,7 @@ class Settings:
             smtp_host=smtp_host,
             smtp_port=smtp_port,
             email_from=email_from,
+            email_from_name=email_from_name,
             email_to=email_to,
             smtp_username=smtp_username,
             smtp_password=smtp_password,
