@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import smtplib
 import os
 import sys
 from datetime import datetime, timedelta, timezone
@@ -16,7 +17,7 @@ try:
         render_html_body,
         send_email,
     )
-    from .rss_fetcher import DISPLAY_TIME_FORMAT, fetch_entries
+    from .rss_fetcher import BEIJING_TZ, DISPLAY_TIME_FORMAT, fetch_entries
 except ImportError:
     # Allow running via `python rss_mailer/runner.py`
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -27,7 +28,7 @@ except ImportError:
         render_html_body,
         send_email,
     )
-    from rss_mailer.rss_fetcher import DISPLAY_TIME_FORMAT, fetch_entries  # type: ignore
+    from rss_mailer.rss_fetcher import BEIJING_TZ, DISPLAY_TIME_FORMAT, fetch_entries  # type: ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +47,8 @@ def main() -> int:
 
     now_utc = datetime.now(timezone.utc)
     window_start = now_utc - timedelta(days=1)
+    now_beijing = now_utc.astimezone(BEIJING_TZ)
+    window_start_beijing = window_start.astimezone(BEIJING_TZ)
     feed_entries = []
 
     for feed in settings.feeds:
@@ -66,7 +69,10 @@ def main() -> int:
         logger.error("No RSS feeds were fetched successfully.")
         return 1
 
-    target_date_str = f"{window_start.strftime(DISPLAY_TIME_FORMAT)} to {now_utc.strftime(DISPLAY_TIME_FORMAT)}"
+    target_date_str = (
+        f"{window_start_beijing.strftime(DISPLAY_TIME_FORMAT)} to "
+        f"{now_beijing.strftime(DISPLAY_TIME_FORMAT)} (Beijing)"
+    )
 
     body = format_email_body(feed_entries, target_date=target_date_str)
     html_body = render_html_body(feed_entries, target_date=target_date_str)
@@ -102,6 +108,11 @@ def main() -> int:
             settings.smtp_ssl,
             exc,
         )
+        # Some servers return SMTPResponseException (-1, b"\\x00\\x00\\x00") after accepting
+        # the message. If you are seeing that but the email arrives, treat it as success.
+        if isinstance(exc, smtplib.SMTPResponseException) and exc.smtp_code == -1 and exc.smtp_error == b"\x00\x00\x00":
+            logger.warning("SMTP returned (-1, b'\\x00\\x00\\x00') but message likely sent; continuing")
+            return 0
         return 1
 
 

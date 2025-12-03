@@ -36,7 +36,7 @@ def format_email_body(
 
                 lines.append(f"{index}. {title}")
                 if published:
-                    lines.append(f"   Published: {published}")
+                    lines.append(f"   Published (Beijing): {published}")
                 if summary:
                     lines.append(f"   Summary: {summary}")
                 if link:
@@ -104,11 +104,18 @@ def send_email(
     use_ssl: bool = False,
 ) -> None:
     smtp_cls = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
-    with smtp_cls(host, port, timeout=30) as client:
-        client.ehlo()
-        if (not use_ssl) and starttls:
-            client.starttls()
+    try:
+        with smtp_cls(host, port, timeout=30) as client:
             client.ehlo()
-        if username:
-            client.login(username, password or "")
-        client.sendmail(sender, recipients, message.as_string())
+            if (not use_ssl) and starttls:
+                client.starttls()
+                client.ehlo()
+            if username:
+                client.login(username, password or "")
+            client.sendmail(sender, recipients, message.as_string())
+    except smtplib.SMTPResponseException as exc:
+        # Some servers (e.g., smtp.qq.com) may emit (-1, b"\x00\x00\x00") even after
+        # accepting the message. Treat that specific combo as success.
+        if exc.smtp_code == -1 and exc.smtp_error == b"\x00\x00\x00":
+            return
+        raise

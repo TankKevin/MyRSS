@@ -17,6 +17,7 @@ class RssItem(TypedDict):
 
 
 DISPLAY_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+BEIJING_TZ = timezone(timedelta(hours=8))
 
 
 def _to_datetime(struct_time: time.struct_time | None) -> datetime | None:
@@ -39,7 +40,11 @@ def fetch_entries(url: str, limit: int, verify_ssl: bool = True) -> List[RssItem
         published_dt = _to_datetime(
             entry.get("published_parsed") or entry.get("updated_parsed")
         )
-        published_str = published_dt.strftime(DISPLAY_TIME_FORMAT) if published_dt else None
+        if published_dt:
+            local_dt = published_dt.astimezone(BEIJING_TZ)
+            published_str = local_dt.strftime(DISPLAY_TIME_FORMAT)
+        else:
+            published_str = None
         items.append(
             RssItem(
                 title=entry.get("title", "(no title)"),

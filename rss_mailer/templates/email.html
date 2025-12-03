@@ -34,7 +34,7 @@
         <div class="header">
             <h1>Daily AI Digest</h1>
             {% if target_date %}
-            <div class="sub">Date (UTC): {{ target_date }}</div>
+            <div class="sub">Date (Beijing): {{ target_date }}</div>
             {% endif %}
         </div>
         <div class="content">
@@ -50,7 +50,7 @@
                                         {% else %}{{ item.title }}{% endif %}
                                     </h2>
                                     {% if item.published %}
-                                        <div class="meta">Published (UTC): {{ item.published }}</div>
+                                        <div class="meta">Published (Beijing): {{ item.published }}</div>
                                     {% endif %}
                                     {% if item.summary %}
                                         <div class="summary">{{ item.summary|safe }}</div>
