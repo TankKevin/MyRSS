@@ -16,7 +16,7 @@ try:
         render_html_body,
         send_email,
     )
-    from .rss_fetcher import fetch_entries
+    from .rss_fetcher import DISPLAY_TIME_FORMAT, fetch_entries
 except ImportError:
     # Allow running via `python rss_mailer/runner.py`
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -27,7 +27,7 @@ except ImportError:
         render_html_body,
         send_email,
     )
-    from rss_mailer.rss_fetcher import fetch_entries  # type: ignore
+    from rss_mailer.rss_fetcher import DISPLAY_TIME_FORMAT, fetch_entries  # type: ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -66,7 +66,7 @@ def main() -> int:
         logger.error("No RSS feeds were fetched successfully.")
         return 1
 
-    target_date_str = f"{window_start.isoformat()} to {now_utc.isoformat()}"
+    target_date_str = f"{window_start.strftime(DISPLAY_TIME_FORMAT)} to {now_utc.strftime(DISPLAY_TIME_FORMAT)}"
 
     body = format_email_body(feed_entries, target_date=target_date_str)
     html_body = render_html_body(feed_entries, target_date=target_date_str)

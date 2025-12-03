@@ -91,7 +91,7 @@ class Settings:
         smtp_username = os.getenv("SMTP_USERNAME")
         smtp_password = os.getenv("SMTP_PASSWORD")
 
-        email_subject = os.getenv("EMAIL_SUBJECT", "Daily RSS Digest")
+        email_subject = os.getenv("EMAIL_SUBJECT", "Daily AI Digest")
         entry_limit = int(os.getenv("ENTRY_LIMIT", "20"))
         starttls = _get_bool("SMTP_STARTTLS", True)
         smtp_ssl = _get_bool("SMTP_SSL", False)

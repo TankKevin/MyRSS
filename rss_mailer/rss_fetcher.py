@@ -16,6 +16,9 @@ class RssItem(TypedDict):
     summary: str | None
 
 
+DISPLAY_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
 def _to_datetime(struct_time: time.struct_time | None) -> datetime | None:
     if not struct_time:
         return None
@@ -36,7 +39,7 @@ def fetch_entries(url: str, limit: int, verify_ssl: bool = True) -> List[RssItem
         published_dt = _to_datetime(
             entry.get("published_parsed") or entry.get("updated_parsed")
         )
-        published_str = published_dt.isoformat() if published_dt else None
+        published_str = published_dt.strftime(DISPLAY_TIME_FORMAT) if published_dt else None
         items.append(
             RssItem(
                 title=entry.get("title", "(no title)"),
