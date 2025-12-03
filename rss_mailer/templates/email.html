@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>每日 RSS 摘要</title>
+    <title>Daily RSS Digest</title>
     <style>
         body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1f2933; background: #f7f9fb; margin: 0; padding: 0; }
         .container { max-width: 700px; margin: 24px auto; background: #ffffff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); overflow: hidden; }
@@ -32,9 +32,9 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>每日 RSS 摘要</h1>
+            <h1>Daily RSS Digest</h1>
             {% if target_date %}
-            <div class="sub">日期 (UTC)：{{ target_date }}</div>
+            <div class="sub">Date (UTC): {{ target_date }}</div>
             {% endif %}
         </div>
         <div class="content">
@@ -50,7 +50,7 @@
                                         {% else %}{{ item.title }}{% endif %}
                                     </h2>
                                     {% if item.published %}
-                                        <div class="meta">发布时间（UTC）：{{ item.published }}</div>
+                                        <div class="meta">Published (UTC): {{ item.published }}</div>
                                     {% endif %}
                                     {% if item.summary %}
                                         <div class="summary">{{ item.summary|safe }}</div>
@@ -58,16 +58,16 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="empty">该时间窗口内没有新条目。</div>
+                            <div class="empty">No new entries in this time window.</div>
                         {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
-                <div class="empty">暂无符合日期的条目。</div>
+                <div class="empty">No entries matched the date window.</div>
             {% endif %}
         </div>
         <div class="footer">
-            本邮件由 RSS 抓取器自动发送，请勿直接回复。
+            This email was sent automatically by the RSS fetcher; please do not reply.
         </div>
     </div>
 </body>
