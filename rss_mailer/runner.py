@@ -69,13 +69,18 @@ def main() -> int:
         logger.error("No RSS feeds were fetched successfully.")
         return 1
 
+    updated_feed_entries = [(name, entries) for name, entries in feed_entries if entries]
+    if not updated_feed_entries:
+        logger.info("No new entries found in any feed; skipping email.")
+        return 0
+
     target_date_str = (
         f"{window_start_beijing.strftime(DISPLAY_TIME_FORMAT)} to "
         f"{now_beijing.strftime(DISPLAY_TIME_FORMAT)} (Beijing)"
     )
 
-    body = format_email_body(feed_entries, target_date=target_date_str)
-    html_body = render_html_body(feed_entries, target_date=target_date_str)
+    body = format_email_body(updated_feed_entries, target_date=target_date_str)
+    html_body = render_html_body(updated_feed_entries, target_date=target_date_str)
     message = build_email(
         subject=settings.email_subject,
         sender=settings.email_from,
