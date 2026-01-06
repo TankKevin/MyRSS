@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Literal, cast
 
 
 def _require_env(name: str) -> str:
@@ -52,6 +53,9 @@ def _parse_feeds(raw: str) -> list[FeedConfig]:
     return feeds
 
 
+DigestFrequency = Literal["daily", "weekly"]
+
+
 @dataclass
 class Settings:
     feeds: list[FeedConfig]
@@ -67,6 +71,7 @@ class Settings:
     email_subject: str
     entry_limit: int
     starttls: bool
+    digest_frequency: DigestFrequency
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -91,6 +96,10 @@ class Settings:
         smtp_username = os.getenv("SMTP_USERNAME")
         smtp_password = os.getenv("SMTP_PASSWORD")
 
+        digest_frequency = os.getenv("DIGEST_FREQUENCY", "daily").strip().lower()
+        if digest_frequency not in {"daily", "weekly"}:
+            raise ValueError("DIGEST_FREQUENCY must be 'daily' or 'weekly'")
+
         email_subject = os.getenv("EMAIL_SUBJECT", "Daily AI Digest")
         entry_limit = int(os.getenv("ENTRY_LIMIT", "20"))
         starttls = _get_bool("SMTP_STARTTLS", True)
@@ -110,4 +119,5 @@ class Settings:
             email_subject=email_subject,
             entry_limit=entry_limit,
             starttls=starttls,
+            digest_frequency=cast(DigestFrequency, digest_frequency),
         )

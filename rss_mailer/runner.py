@@ -46,7 +46,8 @@ def main() -> int:
         return 1
 
     now_utc = datetime.now(timezone.utc)
-    window_start = now_utc - timedelta(days=1)
+    window_days = 1 if settings.digest_frequency == "daily" else 7
+    window_start = now_utc - timedelta(days=window_days)
     now_beijing = now_utc.astimezone(BEIJING_TZ)
     window_start_beijing = window_start.astimezone(BEIJING_TZ)
     feed_entries = []
@@ -74,7 +75,9 @@ def main() -> int:
         logger.info("No new entries found in any feed; skipping email.")
         return 0
 
+    frequency_label = "Daily" if settings.digest_frequency == "daily" else "Weekly"
     target_date_str = (
+        f"{frequency_label} window: "
         f"{window_start_beijing.strftime(DISPLAY_TIME_FORMAT)} to "
         f"{now_beijing.strftime(DISPLAY_TIME_FORMAT)} (Beijing)"
     )

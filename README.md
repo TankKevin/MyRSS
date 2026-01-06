@@ -28,6 +28,7 @@ EMAIL_FROM=notify@example.com
 EMAIL_TO=user1@example.com,user2@example.com
 EMAIL_SUBJECT=Daily AI Digest      # Optional, uses the default if omitted
 ENTRY_LIMIT=20                      # Optional, limit the number of fetched entries
+DIGEST_FREQUENCY=daily             # Optional, 'daily' (24h window) or 'weekly' (7-day window)
 ```
 
 3) Run once manually to verify
@@ -42,7 +43,7 @@ python rss_mailer/runner.py
 ### Customize the email template
 - The HTML template lives at `rss_mailer/templates/email.html` (Jinja2); adjust styles/fields as needed.
 - The email also includes a plain-text backup in case some clients skip HTML.
-- By default it only sends RSS entries published on the previous UTC day; if nothing matches, the email notes it is empty.
+- By default it only sends RSS entries published on the previous UTC day; set `DIGEST_FREQUENCY=weekly` to cover the last seven days instead. If nothing matches, the email notes it is empty.
 
 ## Docker deployment
 1) Build the image
