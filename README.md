@@ -26,7 +26,7 @@ SMTP_PASSWORD=your_smtp_password    # Optional
 SMTP_STARTTLS=true                  # Enable STARTTLS, default is true
 EMAIL_FROM=notify@example.com
 EMAIL_TO=user1@example.com,user2@example.com
-EMAIL_SUBJECT=Daily AI Digest      # Optional, uses the default if omitted
+EMAIL_SUBJECT=Weekly AI Digest      # Optional, uses the default if omitted
 ENTRY_LIMIT=20                      # Optional, limit the number of fetched entries
 DIGEST_FREQUENCY=daily             # Optional, 'daily' (24h window) or 'weekly' (7-day window)
 ```

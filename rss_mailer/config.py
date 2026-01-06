@@ -100,7 +100,7 @@ class Settings:
         if digest_frequency not in {"daily", "weekly"}:
             raise ValueError("DIGEST_FREQUENCY must be 'daily' or 'weekly'")
 
-        email_subject = os.getenv("EMAIL_SUBJECT", "Daily AI Digest")
+        email_subject = os.getenv("EMAIL_SUBJECT", "Weekly AI Digest")
         entry_limit = int(os.getenv("ENTRY_LIMIT", "20"))
         starttls = _get_bool("SMTP_STARTTLS", True)
         smtp_ssl = _get_bool("SMTP_SSL", False)
