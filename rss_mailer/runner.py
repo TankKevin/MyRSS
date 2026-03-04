@@ -91,6 +91,7 @@ def main() -> int:
         recipients=settings.email_to,
         text_body=body,
         html_body=html_body,
+        hide_recipients=settings.email_hide_recipients,
     )
 
     try:
@@ -105,7 +106,10 @@ def main() -> int:
             starttls=settings.starttls,
             use_ssl=settings.smtp_ssl,
         )
-        logger.info("Email sent to %s", ", ".join(settings.email_to))
+        if settings.email_hide_recipients:
+            logger.info("Email sent to %d hidden recipients", len(settings.email_to))
+        else:
+            logger.info("Email sent to %s", ", ".join(settings.email_to))
         return 0
     except Exception as exc:
         logger.error(

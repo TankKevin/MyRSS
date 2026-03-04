@@ -65,6 +65,7 @@ class Settings:
     email_from: str
     email_from_name: str | None
     email_to: list[str]
+    email_hide_recipients: bool
     smtp_username: str | None
     smtp_password: str | None
     smtp_ssl: bool
@@ -104,6 +105,7 @@ class Settings:
         entry_limit = int(os.getenv("ENTRY_LIMIT", "20"))
         starttls = _get_bool("SMTP_STARTTLS", True)
         smtp_ssl = _get_bool("SMTP_SSL", False)
+        email_hide_recipients = _get_bool("EMAIL_HIDE_RECIPIENTS", False)
 
         return cls(
             feeds=feeds,
@@ -113,6 +115,7 @@ class Settings:
             email_from=email_from,
             email_from_name=email_from_name,
             email_to=email_to,
+            email_hide_recipients=email_hide_recipients,
             smtp_username=smtp_username,
             smtp_password=smtp_password,
             smtp_ssl=smtp_ssl,

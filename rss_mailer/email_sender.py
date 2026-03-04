@@ -81,11 +81,16 @@ def build_email(
     recipients: list[str],
     text_body: str,
     html_body: str | None = None,
+    hide_recipients: bool = False,
 ) -> EmailMessage:
     message = EmailMessage()
     message["Subject"] = subject
     message["From"] = formataddr((sender_name or "", sender))
-    message["To"] = ", ".join(recipients)
+    if hide_recipients:
+        # Avoid listing all recipients in the headers; use sender as visible "To".
+        message["To"] = sender
+    else:
+        message["To"] = ", ".join(recipients)
     message.set_content(text_body)
     if html_body:
         message.add_alternative(html_body, subtype="html")
