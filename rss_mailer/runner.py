@@ -84,48 +84,55 @@ def main() -> int:
 
     body = format_email_body(updated_feed_entries, target_date=target_date_str)
     html_body = render_html_body(updated_feed_entries, target_date=target_date_str)
-    message = build_email(
-        subject=settings.email_subject,
-        sender=settings.email_from,
-        sender_name=settings.email_from_name,
-        recipients=settings.email_to,
-        text_body=body,
-        html_body=html_body,
-        hide_recipients=settings.email_hide_recipients,
-    )
+    if settings.email_hide_recipients:
+        logger.info("EMAIL_HIDE_RECIPIENTS is ignored because emails are sent one-by-one.")
 
-    try:
-        send_email(
-            host=settings.smtp_host,
-            port=settings.smtp_port,
+    failures: list[tuple[str, Exception]] = []
+    for recipient in settings.email_to:
+        message = build_email(
+            subject=settings.email_subject,
             sender=settings.email_from,
-            recipients=settings.email_to,
-            message=message,
-            username=settings.smtp_username,
-            password=settings.smtp_password,
-            starttls=settings.starttls,
-            use_ssl=settings.smtp_ssl,
+            sender_name=settings.email_from_name,
+            recipients=[recipient],
+            text_body=body,
+            html_body=html_body,
+            hide_recipients=False,
         )
-        if settings.email_hide_recipients:
-            logger.info("Email sent to %d hidden recipients", len(settings.email_to))
-        else:
-            logger.info("Email sent to %s", ", ".join(settings.email_to))
-        return 0
-    except Exception as exc:
-        logger.error(
-            "Failed to send email (host=%s port=%s starttls=%s ssl=%s): %s",
-            settings.smtp_host,
-            settings.smtp_port,
-            settings.starttls,
-            settings.smtp_ssl,
-            exc,
-        )
-        # Some servers return SMTPResponseException (-1, b"\\x00\\x00\\x00") after accepting
-        # the message. If you are seeing that but the email arrives, treat it as success.
-        if isinstance(exc, smtplib.SMTPResponseException) and exc.smtp_code == -1 and exc.smtp_error == b"\x00\x00\x00":
-            logger.warning("SMTP returned (-1, b'\\x00\\x00\\x00') but message likely sent; continuing")
-            return 0
-        return 1
+
+        try:
+            send_email(
+                host=settings.smtp_host,
+                port=settings.smtp_port,
+                sender=settings.email_from,
+                recipients=[recipient],
+                message=message,
+                username=settings.smtp_username,
+                password=settings.smtp_password,
+                starttls=settings.starttls,
+                use_ssl=settings.smtp_ssl,
+            )
+            logger.info("Email sent to %s", recipient)
+        except Exception as exc:
+            logger.error(
+                "Failed to send email to %s (host=%s port=%s starttls=%s ssl=%s): %s",
+                recipient,
+                settings.smtp_host,
+                settings.smtp_port,
+                settings.starttls,
+                settings.smtp_ssl,
+                exc,
+            )
+            # Some servers return SMTPResponseException (-1, b"\\x00\\x00\\x00") after accepting
+            # the message. If you are seeing that but the email arrives, treat it as success.
+            if isinstance(exc, smtplib.SMTPResponseException) and exc.smtp_code == -1 and exc.smtp_error == b"\x00\x00\x00":
+                logger.warning(
+                    "SMTP returned (-1, b'\\x00\\x00\\x00') for %s but message likely sent; continuing",
+                    recipient,
+                )
+                continue
+            failures.append((recipient, exc))
+
+    return 0 if not failures else 1
 
 
 if __name__ == "__main__":
