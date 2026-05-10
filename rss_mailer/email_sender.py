@@ -1,52 +1,110 @@
 from __future__ import annotations
 
 import os
+import re
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
-from typing import Iterable, List, Tuple
+from typing import Iterable, Tuple, TypedDict
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 
 from .rss_fetcher import RssItem
 
 
+class FeedBlock(TypedDict):
+    name: str
+    items: list[RssItem]
+
+
+class CategorySection(TypedDict):
+    title: str
+    anchor: str
+    feeds: list[FeedBlock]
+    count: int
+
+
+FeedEntries = Iterable[Tuple[str, str, Iterable[RssItem]]]
+
+
+def _anchor_for_category(category: str, index: int) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", category.lower()).strip("-")
+    return f"section-{slug or index}"
+
+
+def _build_sections(feed_entries: FeedEntries) -> list[CategorySection]:
+    sections: list[CategorySection] = []
+    section_indexes: dict[str, int] = {}
+    used_anchors: set[str] = set()
+
+    for category, feed_name, entries in feed_entries:
+        entries_list = list(entries)
+        if category not in section_indexes:
+            anchor = _anchor_for_category(category, len(sections) + 1)
+            if anchor in used_anchors:
+                anchor = f"{anchor}-{len(sections) + 1}"
+            used_anchors.add(anchor)
+            section_indexes[category] = len(sections)
+            sections.append(
+                CategorySection(
+                    title=category,
+                    anchor=anchor,
+                    feeds=[],
+                    count=0,
+                )
+            )
+
+        section = sections[section_indexes[category]]
+        section["feeds"].append(FeedBlock(name=feed_name, items=entries_list))
+        section["count"] += len(entries_list)
+
+    return sections
+
+
 def format_email_body(
-    feed_entries: Iterable[Tuple[str, Iterable[RssItem]]],
+    feed_entries: FeedEntries,
     target_date: str | None = None,
+    ai_summary: str | None = None,
 ) -> str:
     """Plain-text fallback body."""
-    feeds: List[Tuple[str, List[RssItem]]] = [
-        (name, list(entries)) for name, entries in feed_entries
-    ]
+    sections = _build_sections(feed_entries)
     lines: list[str] = []
     if target_date:
         lines.append(f"Entries for {target_date} (UTC)")
         lines.append("")
+    if ai_summary:
+        lines.append("AI Summary")
+        lines.append(ai_summary.strip())
+        lines.append("")
     has_items = False
-    for feed_name, entries in feeds:
-        lines.append(f"[{feed_name}]")
-        if entries:
-            has_items = True
-            for index, item in enumerate(entries, start=1):
-                title = item.get("title") or "(no title)"
-                link = item.get("link") or ""
-                published = item.get("published")
-                summary = item.get("summary")
+    for section in sections:
+        lines.append(f"## {section['title']}")
+        lines.append("")
+        for feed in section["feeds"]:
+            feed_name = feed["name"]
+            entries = feed["items"]
+            lines.append(f"[{feed_name}]")
+            if entries:
+                has_items = True
+                for index, item in enumerate(entries, start=1):
+                    title = item.get("title") or "(no title)"
+                    link = item.get("link") or ""
+                    published = item.get("published")
+                    summary = item.get("summary")
 
-                lines.append(f"{index}. {title}")
-                if published:
-                    lines.append(f"   Published (Beijing): {published}")
-                if summary:
-                    lines.append(f"   Summary: {summary}")
-                if link:
-                    lines.append(f"   Link: {link}")
+                    lines.append(f"{index}. {title}")
+                    if published:
+                        lines.append(f"   Published: {published}")
+                    if summary:
+                        lines.append(f"   Summary: {summary}")
+                    if link:
+                        lines.append(f"   Link: {link}")
+                    lines.append("")
+            else:
+                lines.append("   No entries in this window.")
                 lines.append("")
-        else:
-            lines.append("   No entries in this window.")
-            lines.append("")
 
-    if not has_items and not feeds:
+    if not has_items and not sections:
         lines.append("No new entries found.")
     elif not has_items:
         lines.append("No new entries found.")
@@ -54,8 +112,9 @@ def format_email_body(
 
 
 def render_html_body(
-    feed_entries: Iterable[Tuple[str, Iterable[RssItem]]],
+    feed_entries: FeedEntries,
     target_date: str | None = None,
+    ai_summary: str | None = None,
 ) -> str | None:
     """Render HTML body with Jinja2 template (rss_mailer/templates/email.html)."""
     template_dir = os.path.join(os.path.dirname(__file__), "templates")
@@ -68,10 +127,8 @@ def render_html_body(
     except TemplateNotFound:
         return None
 
-    feeds_list: List[Tuple[str, List[RssItem]]] = [
-        (name, list(entries)) for name, entries in feed_entries
-    ]
-    return template.render(feeds=feeds_list, target_date=target_date)
+    sections = _build_sections(feed_entries)
+    return template.render(sections=sections, target_date=target_date, ai_summary=ai_summary)
 
 
 def build_email(

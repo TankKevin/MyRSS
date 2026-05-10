@@ -16,7 +16,7 @@ class RssItem(TypedDict):
     summary: str | None
 
 
-DISPLAY_TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+DISPLAY_TIME_FORMAT = "%Y-%m-%d %H:%M"
 BEIJING_TZ = timezone(timedelta(hours=8))
 
 

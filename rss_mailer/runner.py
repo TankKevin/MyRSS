@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 try:
     # When executed as package module: python -m rss_mailer.runner
+    from .ai_summary import generate_ai_summary
     from .config import Settings
     from .email_sender import (
         build_email,
@@ -21,6 +22,7 @@ try:
 except ImportError:
     # Allow running via `python rss_mailer/runner.py`
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from rss_mailer.ai_summary import generate_ai_summary  # type: ignore
     from rss_mailer.config import Settings  # type: ignore
     from rss_mailer.email_sender import (  # type: ignore
         build_email,
@@ -35,6 +37,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
 )
 logger = logging.getLogger(__name__)
+WINDOW_TIME_FORMAT = "%Y-%m-%d %H:%M"
 
 
 def main() -> int:
@@ -64,13 +67,17 @@ def main() -> int:
             for item in entries
             if (published_dt := item.get("published_dt")) and window_start <= published_dt <= now_utc
         ]
-        feed_entries.append((feed.name, filtered))
+        feed_entries.append((feed.category, feed.name, filtered))
 
     if not feed_entries:
         logger.error("No RSS feeds were fetched successfully.")
         return 1
 
-    updated_feed_entries = [(name, entries) for name, entries in feed_entries if entries]
+    updated_feed_entries = [
+        (category, name, entries)
+        for category, name, entries in feed_entries
+        if entries
+    ]
     if not updated_feed_entries:
         logger.info("No new entries found in any feed; skipping email.")
         return 0
@@ -78,12 +85,26 @@ def main() -> int:
     frequency_label = "Daily" if settings.digest_frequency == "daily" else "Weekly"
     target_date_str = (
         f"{frequency_label} window: "
-        f"{window_start_beijing.strftime(DISPLAY_TIME_FORMAT)} to "
-        f"{now_beijing.strftime(DISPLAY_TIME_FORMAT)} (Beijing)"
+        f"{window_start_beijing.strftime(WINDOW_TIME_FORMAT)} to "
+        f"{now_beijing.strftime(WINDOW_TIME_FORMAT)}"
     )
 
-    body = format_email_body(updated_feed_entries, target_date=target_date_str)
-    html_body = render_html_body(updated_feed_entries, target_date=target_date_str)
+    ai_summary = None
+    if settings.ai_summary_enabled:
+        if settings.zhipu_api_key:
+            ai_summary = generate_ai_summary(
+                updated_feed_entries,
+                target_date=target_date_str,
+                api_key=settings.zhipu_api_key,
+                api_host=settings.zhipu_api_host,
+                model=settings.zhipu_model,
+                max_items=settings.ai_summary_max_items,
+            )
+        else:
+            logger.warning("AI_SUMMARY_ENABLED=true but ZHIPU_API_KEY is not set; skipping AI summary.")
+
+    body = format_email_body(updated_feed_entries, target_date=target_date_str, ai_summary=ai_summary)
+    html_body = render_html_body(updated_feed_entries, target_date=target_date_str, ai_summary=ai_summary)
     if settings.email_hide_recipients:
         logger.info("EMAIL_HIDE_RECIPIENTS is ignored because emails are sent one-by-one.")
 
