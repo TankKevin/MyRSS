@@ -73,7 +73,7 @@ def format_email_body(
         lines.append(f"Entries for {target_date} (UTC)")
         lines.append("")
     if ai_summary:
-        lines.append("AI Summary")
+        lines.append("Highlights")
         lines.append(ai_summary.strip())
         lines.append("")
     has_items = False

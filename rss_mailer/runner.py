@@ -99,6 +99,7 @@ def main() -> int:
                 api_host=settings.zhipu_api_host,
                 model=settings.zhipu_model,
                 max_items=settings.ai_summary_max_items,
+                description_chars=settings.ai_summary_description_chars,
             )
         else:
             logger.warning("AI_SUMMARY_ENABLED=true but ZHIPU_API_KEY is not set; skipping AI summary.")

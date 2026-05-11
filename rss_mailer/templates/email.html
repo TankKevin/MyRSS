@@ -104,24 +104,33 @@
             margin-top: 18px;
         }
 
-        .ai-summary {
+        .ai-summary-card {
             margin-top: 18px;
-            padding: 20px 22px;
             border: 1px solid #d8e4f0;
             border-radius: 16px;
             background: #ffffff;
             box-shadow: 0 12px 32px rgba(30, 45, 70, 0.08);
+            overflow: hidden;
         }
 
         .ai-summary-title {
             margin: 0;
+            padding: 18px 22px;
             color: #172033;
             font-size: 18px;
             font-weight: 820;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .ai-summary-title::-webkit-details-marker,
+        .entry-toggle::-webkit-details-marker {
+            display: none;
         }
 
         .ai-summary-content {
-            margin: 12px 0 0;
+            margin: 0;
+            padding: 0 22px 20px;
             color: #334155;
             font-size: 14px;
             white-space: pre-line;
@@ -207,10 +216,10 @@
 
         .entry-card {
             margin: 10px 0 0;
-            padding: 16px;
             border: 1px solid #e4ebf3;
             border-radius: 12px;
             background: #ffffff;
+            overflow: hidden;
         }
 
         .entry-card:first-child {
@@ -227,6 +236,35 @@
 
         .entry-title a {
             color: #101827;
+        }
+
+        .entry-toggle {
+            display: block;
+            padding: 16px;
+            cursor: pointer;
+            list-style: none;
+        }
+
+        .entry-toggle::after,
+        .ai-summary-title::after {
+            content: "Expand";
+            display: inline-block;
+            margin-top: 10px;
+            border-radius: 999px;
+            background: #eef5fb;
+            color: #31516d;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 5px 9px;
+        }
+
+        .entry-card[open] .entry-toggle::after,
+        .ai-summary-card[open] .ai-summary-title::after {
+            content: "Collapse";
+        }
+
+        .entry-detail {
+            padding: 0 16px 16px;
         }
 
         .meta-row {
@@ -316,9 +354,8 @@
                 padding: 0 10px;
             }
 
-            .ai-summary {
+            .ai-summary-card {
                 margin: 16px 10px 0;
-                padding: 16px;
                 border-radius: 0;
             }
 
@@ -345,8 +382,12 @@
                 padding: 6px 10px 12px;
             }
 
-            .entry-card {
+            .entry-toggle {
                 padding: 14px;
+            }
+
+            .entry-detail {
+                padding: 0 14px 14px;
             }
 
             .entry-title {
@@ -383,10 +424,10 @@
             </header>
 
             {% if ai_summary %}
-            <section class="ai-summary">
-                <h2 class="ai-summary-title">AI Summary</h2>
+            <details class="ai-summary-card">
+                <summary class="ai-summary-title">Highlights</summary>
                 <div class="ai-summary-content">{{ ai_summary }}</div>
-            </section>
+            </details>
             {% endif %}
 
             <main class="section-stack">
@@ -409,15 +450,14 @@
                             {% if feed["items"] and feed["items"]|length > 0 %}
                             <div class="entries">
                                 {% for item in feed["items"] %}
-                                <article class="entry-card">
-                                    <h4 class="entry-title">
-                                        {% if item.link %}
-                                        <a href="{{ item.link }}" target="_blank" rel="noopener noreferrer">{{ item.title }}</a>
-                                        {% else %}
+                                <details class="entry-card">
+                                    <summary class="entry-toggle">
+                                        <h4 class="entry-title">
                                         {{ item.title }}
-                                        {% endif %}
-                                    </h4>
+                                        </h4>
+                                    </summary>
 
+                                    <div class="entry-detail">
                                     {% if item.published %}
                                     <div class="meta-row">Published: {{ item.published }}</div>
                                     {% endif %}
@@ -429,7 +469,8 @@
                                     {% if item.link %}
                                     <a class="read-link" href="{{ item.link }}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>
                                     {% endif %}
-                                </article>
+                                    </div>
+                                </details>
                                 {% endfor %}
                             </div>
                             {% else %}

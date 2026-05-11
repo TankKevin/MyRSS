@@ -32,39 +32,45 @@ def _strip_html(value: str | None) -> str:
     return " ".join("".join(chars).split())
 
 
-def _entry_lines(feed_entries: FeedEntries, max_items: int) -> list[str]:
+def _truncate_text(value: str, max_chars: int) -> str:
+    if max_chars <= 0 or len(value) <= max_chars:
+        return value
+    return value[:max_chars].rstrip() + "..."
+
+
+def _entry_lines(feed_entries: FeedEntries, max_items: int, description_chars: int) -> list[str]:
     lines: list[str] = []
-    for category, feed_name, entries in feed_entries:
+    for _category, _feed_name, entries in feed_entries:
         for item in entries:
             if len(lines) >= max_items:
                 return lines
             title = item.get("title") or "(no title)"
-            published = item.get("published") or "unknown time"
-            link = item.get("link") or ""
-            summary = _strip_html(item.get("summary"))[:500]
-            parts = [
-                f"Category: {category}",
-                f"Feed: {feed_name}",
-                f"Title: {title}",
-                f"Published: {published}",
-            ]
-            if summary:
-                parts.append(f"Summary: {summary}")
-            if link:
-                parts.append(f"Link: {link}")
-            lines.append(" | ".join(parts))
+            description = _truncate_text(_strip_html(item.get("summary")), description_chars)
+            if description:
+                lines.append(f"Title: {title}\nDescription excerpt: {description}")
+            else:
+                lines.append(f"Title: {title}\nDescription excerpt: ")
     return lines
 
 
-def build_summary_prompt(feed_entries: FeedEntries, target_date: str, max_items: int) -> str:
-    entry_lines = _entry_lines(feed_entries, max_items=max_items)
+def build_summary_prompt(
+    feed_entries: FeedEntries,
+    target_date: str,
+    max_items: int,
+    description_chars: int,
+) -> str:
+    entry_lines = _entry_lines(
+        feed_entries,
+        max_items=max_items,
+        description_chars=description_chars,
+    )
     if not entry_lines:
         return ""
 
-    entries_text = "\n".join(f"{index}. {line}" for index, line in enumerate(entry_lines, start=1))
+    entries_text = "\n\n".join(f"{index}. {line}" for index, line in enumerate(entry_lines, start=1))
     return (
         "You are writing the opening AI summary for an RSS email digest.\n"
-        "Write in concise Chinese.\n"
+        "Write in concise English.\n"
         "Return plain text only, no markdown table.\n"
         "Use this structure:\n"
         "1. One sentence overall trend.\n"
@@ -82,8 +88,14 @@ def generate_ai_summary(
     api_host: str,
     model: str,
     max_items: int,
+    description_chars: int,
 ) -> str | None:
-    prompt = build_summary_prompt(feed_entries, target_date=target_date, max_items=max_items)
+    prompt = build_summary_prompt(
+        feed_entries,
+        target_date=target_date,
+        max_items=max_items,
+        description_chars=description_chars,
+    )
     if not prompt:
         return None
 

@@ -35,6 +35,7 @@ ZHIPU_API_KEY=your_zhipu_api_key    # Optional, enables the AI summary block at 
 ZHIPU_API_HOST=https://open.bigmodel.cn/api/paas/v4/chat/completions
 ZHIPU_MODEL=glm-4.7-flash           # Optional
 AI_SUMMARY_MAX_ITEMS=30             # Optional, max RSS entries sent to the summary prompt
+AI_SUMMARY_DESCRIPTION_CHARS=300    # Optional, max description characters per entry for summary input
 ```
 
 3) Run once manually to verify
@@ -50,7 +51,7 @@ python rss_mailer/runner.py
 - The HTML template lives at `rss_mailer/templates/email.html` (Jinja2); adjust styles/fields as needed.
 - The email also includes a plain-text backup in case some clients skip HTML.
 - RSS feeds can be grouped into sections with `RSS_FEEDS="Category|Name|URL"`. The HTML email renders a section jump list when more than one category has updates. Most modern email clients support these `#section` links, but some clients may ignore in-email anchor jumps.
-- Set `ZHIPU_API_KEY` to generate a Chinese AI summary block before the RSS sections. If the Zhipu request fails, the script logs the error and still sends the normal RSS digest.
+- Set `ZHIPU_API_KEY` to generate an English AI summary card before the RSS sections. The AI prompt only includes each entry's title and a truncated description excerpt. If the Zhipu request fails, the script logs the error and still sends the normal RSS digest.
 - By default it only sends RSS entries published on the previous UTC day; set `DIGEST_FREQUENCY=weekly` to cover the last seven days instead. If nothing matches, the email notes it is empty.
 
 ## Docker deployment

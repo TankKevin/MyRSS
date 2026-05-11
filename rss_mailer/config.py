@@ -86,6 +86,7 @@ class Settings:
     zhipu_api_host: str
     zhipu_model: str
     ai_summary_max_items: int
+    ai_summary_description_chars: int
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -128,6 +129,7 @@ class Settings:
         )
         zhipu_model = os.getenv("ZHIPU_MODEL", "glm-4.7-flash")
         ai_summary_max_items = int(os.getenv("AI_SUMMARY_MAX_ITEMS", "30"))
+        ai_summary_description_chars = int(os.getenv("AI_SUMMARY_DESCRIPTION_CHARS", "300"))
 
         return cls(
             feeds=feeds,
@@ -150,4 +152,5 @@ class Settings:
             zhipu_api_host=zhipu_api_host,
             zhipu_model=zhipu_model,
             ai_summary_max_items=ai_summary_max_items,
+            ai_summary_description_chars=ai_summary_description_chars,
         )
