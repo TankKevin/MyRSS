@@ -14,6 +14,7 @@ from .rss_fetcher import RssItem
 
 class FeedBlock(TypedDict):
     name: str
+    anchor: str
     items: list[RssItem]
 
 
@@ -27,9 +28,18 @@ class CategorySection(TypedDict):
 FeedEntries = Iterable[Tuple[str, str, Iterable[RssItem]]]
 
 
-def _anchor_for_category(category: str, index: int) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", category.lower()).strip("-")
-    return f"section-{slug or index}"
+def _anchor_for_label(prefix: str, label: str, index: int) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")
+    return f"{prefix}-{slug or index}"
+
+
+def _unique_anchor(base_anchor: str, used_anchors: set[str], index: int) -> str:
+    anchor = base_anchor
+    while anchor in used_anchors:
+        anchor = f"{base_anchor}-{index}"
+        index += 1
+    used_anchors.add(anchor)
+    return anchor
 
 
 def _build_sections(feed_entries: FeedEntries) -> list[CategorySection]:
@@ -40,10 +50,12 @@ def _build_sections(feed_entries: FeedEntries) -> list[CategorySection]:
     for category, feed_name, entries in feed_entries:
         entries_list = list(entries)
         if category not in section_indexes:
-            anchor = _anchor_for_category(category, len(sections) + 1)
-            if anchor in used_anchors:
-                anchor = f"{anchor}-{len(sections) + 1}"
-            used_anchors.add(anchor)
+            section_index = len(sections) + 1
+            anchor = _unique_anchor(
+                _anchor_for_label("section", category, section_index),
+                used_anchors,
+                section_index,
+            )
             section_indexes[category] = len(sections)
             sections.append(
                 CategorySection(
@@ -55,7 +67,13 @@ def _build_sections(feed_entries: FeedEntries) -> list[CategorySection]:
             )
 
         section = sections[section_indexes[category]]
-        section["feeds"].append(FeedBlock(name=feed_name, items=entries_list))
+        feed_index = sum(len(item["feeds"]) for item in sections) + 1
+        feed_anchor = _unique_anchor(
+            _anchor_for_label("feed", feed_name, feed_index),
+            used_anchors,
+            feed_index,
+        )
+        section["feeds"].append(FeedBlock(name=feed_name, anchor=feed_anchor, items=entries_list))
         section["count"] += len(entries_list)
 
     return sections
@@ -128,7 +146,11 @@ def render_html_body(
         return None
 
     sections = _build_sections(feed_entries)
-    return template.render(sections=sections, target_date=target_date, ai_summary=ai_summary)
+    return template.render(
+        sections=sections,
+        target_date=target_date,
+        ai_summary=ai_summary,
+    )
 
 
 def build_email(

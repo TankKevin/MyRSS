@@ -82,10 +82,8 @@ def main() -> int:
         logger.info("No new entries found in any feed; skipping email.")
         return 0
 
-    frequency_label = "Daily" if settings.digest_frequency == "daily" else "Weekly"
     target_date_str = (
-        f"{frequency_label} window: "
-        f"{window_start_beijing.strftime(WINDOW_TIME_FORMAT)} to "
+        f"{window_start_beijing.strftime(WINDOW_TIME_FORMAT)} - "
         f"{now_beijing.strftime(WINDOW_TIME_FORMAT)}"
     )
 

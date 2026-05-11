@@ -13,11 +13,11 @@ pip install -r requirements.txt
 
 2) Configure environment variables (write them into `.env` and the program will auto-load, or export them directly)
 ```
-RSS_FEEDS="AI Big Three|OpenAI|https://example.com/openai.xml,Technical|LangChain|https://example.com/langchain.xml"  # Multiple feeds: separate with commas or new lines, each entry is category|name|url
+RSS_FEEDS="Big Three|OpenAI|https://example.com/openai.xml,AI Technology|LangChain|https://example.com/langchain.xml"  # Multiple feeds: separate with commas or new lines, each entry is category|name|url
 # For a single feed you can keep using the legacy variables:
 RSS_FEED_URL=https://example.com/feed.xml
 RSS_FEED_NAME=Tech                                # Optional, defaults to "RSS"
-RSS_FEED_CATEGORY=Technical                       # Optional, defaults to "General"
+RSS_FEED_CATEGORY=AI Technology                       # Optional, defaults to "General"
 RSS_VERIFY_SSL=true                # Set to false if the feed has certificate issues (less secure)
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
@@ -50,7 +50,7 @@ python rss_mailer/runner.py
 ### Customize the email template
 - The HTML template lives at `rss_mailer/templates/email.html` (Jinja2); adjust styles/fields as needed.
 - The email also includes a plain-text backup in case some clients skip HTML.
-- RSS feeds can be grouped into sections with `RSS_FEEDS="Category|Name|URL"`. The HTML email renders a section jump list when more than one category has updates. Most modern email clients support these `#section` links, but some clients may ignore in-email anchor jumps.
+- RSS feeds can be grouped into sections with `RSS_FEEDS="Category|Name|URL"`. The HTML email renders jump tags for both category sections and individual feed names. Most modern email clients support these in-email anchor links, but some clients may ignore them.
 - Set `ZHIPU_API_KEY` to generate an English AI summary card before the RSS sections. The AI prompt only includes each entry's title and a truncated description excerpt. If the Zhipu request fails, the script logs the error and still sends the normal RSS digest.
 - By default it only sends RSS entries published on the previous UTC day; set `DIGEST_FREQUENCY=weekly` to cover the last seven days instead. If nothing matches, the email notes it is empty.
 

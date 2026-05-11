@@ -78,9 +78,8 @@
         }
 
         .quick-nav {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            display: grid;
+            gap: 10px;
             margin-top: 20px;
         }
 
@@ -98,6 +97,34 @@
         .quick-nav a:hover {
             background: rgba(255, 255, 255, 0.18);
             text-decoration: none;
+        }
+
+        .quick-nav-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .quick-nav-category {
+            flex: 0 0 auto;
+            font-size: 12px;
+        }
+
+        .quick-nav-feeds {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 0;
+            padding-left: 0;
+        }
+
+        .quick-nav-feed {
+            border-color: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.07);
+            color: rgba(255, 255, 255, 0.88);
+            font-size: 11px;
+            font-weight: 650;
+            padding: 5px 9px;
         }
 
         .section-stack {
@@ -141,6 +168,12 @@
         }
 
         .category-anchor {
+            display: block;
+            height: 0;
+            overflow: hidden;
+        }
+
+        .feed-anchor {
             display: block;
             height: 0;
             overflow: hidden;
@@ -222,6 +255,10 @@
             overflow: hidden;
         }
 
+        .entry-fold {
+            display: block;
+        }
+
         .entry-card:first-child {
             margin-top: 8px;
         }
@@ -258,7 +295,7 @@
             padding: 5px 9px;
         }
 
-        .entry-card[open] .entry-toggle::after,
+        .entry-fold[open] .entry-toggle::after,
         .ai-summary-card[open] .ai-summary-title::after {
             content: "Collapse";
         }
@@ -295,7 +332,7 @@
 
         .read-link {
             display: inline-block;
-            margin-top: 14px;
+            margin: 0 16px 16px;
             border-radius: 999px;
             background: #1768ac;
             color: #ffffff;
@@ -347,6 +384,15 @@
 
             .quick-nav {
                 margin-top: 16px;
+            }
+
+            .quick-nav-group {
+                display: block;
+            }
+
+            .quick-nav-feeds {
+                margin-top: 6px;
+                padding-left: 12px;
             }
 
             .section-stack {
@@ -413,10 +459,19 @@
                     <p class="hero-subtitle">Latest entries collected from your configured feeds.</p>
                     {% endif %}
 
-                    {% if sections and sections|length > 1 %}
+                    {% if sections and sections|length > 0 %}
                     <nav class="quick-nav" aria-label="Digest sections">
                         {% for section in sections %}
-                        <a href="#{{ section.anchor }}">{{ section.title }}</a>
+                        <div class="quick-nav-group">
+                            <a class="quick-nav-category" href="#{{ section.anchor }}">{{ section.title }}</a>
+                            {% if section["feeds"] and section["feeds"]|length > 0 %}
+                            <div class="quick-nav-feeds">
+                                {% for feed in section["feeds"] %}
+                                <a class="quick-nav-feed" href="#{{ feed.anchor }}">{{ feed.name }}</a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
                         {% endfor %}
                     </nav>
                     {% endif %}
@@ -442,6 +497,7 @@
 
                         {% for feed in section["feeds"] %}
                         <section class="feed-card">
+                            <a class="feed-anchor" id="{{ feed.anchor }}" name="{{ feed.anchor }}"></a>
                             <div class="feed-header">
                                 <h3 class="feed-title">{{ feed["name"] }}</h3>
                                 <div class="feed-count">{{ feed["items"]|length if feed["items"] else 0 }} updates</div>
@@ -450,27 +506,29 @@
                             {% if feed["items"] and feed["items"]|length > 0 %}
                             <div class="entries">
                                 {% for item in feed["items"] %}
-                                <details class="entry-card">
-                                    <summary class="entry-toggle">
-                                        <h4 class="entry-title">
-                                        {{ item.title }}
-                                        </h4>
-                                    </summary>
+                                <article class="entry-card">
+                                    <details class="entry-fold">
+                                        <summary class="entry-toggle">
+                                            <h4 class="entry-title">
+                                            {{ item.title }}
+                                            </h4>
+                                        </summary>
 
-                                    <div class="entry-detail">
-                                    {% if item.published %}
-                                    <div class="meta-row">Published: {{ item.published }}</div>
-                                    {% endif %}
+                                        <div class="entry-detail">
+                                        {% if item.published %}
+                                        <div class="meta-row">Published: {{ item.published }}</div>
+                                        {% endif %}
 
-                                    {% if item.summary %}
-                                    <div class="summary">{{ item.summary|safe }}</div>
-                                    {% endif %}
+                                        {% if item.summary %}
+                                        <div class="summary">{{ item.summary|safe }}</div>
+                                        {% endif %}
+                                        </div>
+                                    </details>
 
                                     {% if item.link %}
                                     <a class="read-link" href="{{ item.link }}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>
                                     {% endif %}
-                                    </div>
-                                </details>
+                                </article>
                                 {% endfor %}
                             </div>
                             {% else %}
