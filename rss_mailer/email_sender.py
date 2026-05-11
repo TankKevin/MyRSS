@@ -5,6 +5,8 @@ import re
 import smtplib
 from email.message import EmailMessage
 from email.utils import formataddr
+from html import escape
+from html.parser import HTMLParser
 from typing import Iterable, Tuple, TypedDict
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
@@ -26,6 +28,7 @@ class CategorySection(TypedDict):
 
 
 FeedEntries = Iterable[Tuple[str, str, Iterable[RssItem]]]
+ALLOWED_SUMMARY_TAGS = {"p", "ul", "li", "strong"}
 
 
 def _anchor_for_label(prefix: str, label: str, index: int) -> str:
@@ -79,6 +82,71 @@ def _build_sections(feed_entries: FeedEntries) -> list[CategorySection]:
     return sections
 
 
+class SummaryHtmlSanitizer(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+        self.skipped_tag_depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"script", "style"}:
+            self.skipped_tag_depth += 1
+            return
+        if self.skipped_tag_depth:
+            return
+        if tag in ALLOWED_SUMMARY_TAGS:
+            self.parts.append(f"<{tag}>")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"script", "style"} and self.skipped_tag_depth:
+            self.skipped_tag_depth -= 1
+            return
+        if self.skipped_tag_depth:
+            return
+        if tag in ALLOWED_SUMMARY_TAGS:
+            self.parts.append(f"</{tag}>")
+
+    def handle_data(self, data: str) -> None:
+        if self.skipped_tag_depth:
+            return
+        self.parts.append(escape(data, quote=False))
+
+
+class HtmlTextExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"p", "ul"}:
+            self.parts.append("\n")
+        elif tag == "li":
+            self.parts.append("\n- ")
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def _sanitize_summary_html(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    sanitizer = SummaryHtmlSanitizer()
+    sanitizer.feed(value.strip())
+    sanitized = "".join(sanitizer.parts).strip()
+    if not sanitized:
+        return None
+    if "<" not in sanitized:
+        return f"<p>{sanitized}</p>"
+    return sanitized
+
+
+def _html_to_text(value: str) -> str:
+    extractor = HtmlTextExtractor()
+    extractor.feed(value)
+    return "\n".join(line.strip() for line in "".join(extractor.parts).splitlines() if line.strip())
+
+
 def format_email_body(
     feed_entries: FeedEntries,
     target_date: str | None = None,
@@ -91,8 +159,9 @@ def format_email_body(
         lines.append(f"Entries for {target_date} (UTC)")
         lines.append("")
     if ai_summary:
+        summary_text = _html_to_text(_sanitize_summary_html(ai_summary) or "")
         lines.append("Highlights")
-        lines.append(ai_summary.strip())
+        lines.append(summary_text)
         lines.append("")
     has_items = False
     for section in sections:
@@ -146,10 +215,12 @@ def render_html_body(
         return None
 
     sections = _build_sections(feed_entries)
+    ai_summary_html = _sanitize_summary_html(ai_summary)
     return template.render(
         sections=sections,
         target_date=target_date,
         ai_summary=ai_summary,
+        ai_summary_html=ai_summary_html,
     )
 
 

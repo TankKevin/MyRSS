@@ -146,11 +146,8 @@
             color: #172033;
             font-size: 18px;
             font-weight: 820;
-            cursor: pointer;
-            list-style: none;
         }
 
-        .ai-summary-title::-webkit-details-marker,
         .entry-toggle::-webkit-details-marker {
             display: none;
         }
@@ -160,7 +157,25 @@
             padding: 0 22px 20px;
             color: #334155;
             font-size: 14px;
-            white-space: pre-line;
+        }
+
+        .ai-summary-content p {
+            margin: 0 0 10px;
+        }
+
+        .ai-summary-content ul {
+            margin: 0 0 12px;
+            padding-left: 22px;
+        }
+
+        .ai-summary-content li {
+            margin: 0 0 7px;
+        }
+
+        .ai-summary-content p:last-child,
+        .ai-summary-content ul:last-child,
+        .ai-summary-content li:last-child {
+            margin-bottom: 0;
         }
 
         .category-card {
@@ -295,8 +310,7 @@
             padding: 5px 9px;
         }
 
-        .entry-fold[open] .entry-toggle::after,
-        .ai-summary-card[open] .ai-summary-title::after {
+        .entry-fold[open] .entry-toggle::after {
             content: "Collapse";
         }
 
@@ -478,11 +492,11 @@
                 </div>
             </header>
 
-            {% if ai_summary %}
-            <details class="ai-summary-card">
-                <summary class="ai-summary-title">Highlights</summary>
-                <div class="ai-summary-content">{{ ai_summary }}</div>
-            </details>
+            {% if ai_summary_html %}
+            <section class="ai-summary-card">
+                <h2 class="ai-summary-title">Highlights</h2>
+                <div class="ai-summary-content">{{ ai_summary_html|safe }}</div>
+            </section>
             {% endif %}
 
             <main class="section-stack">

@@ -34,8 +34,8 @@ AI_SUMMARY_ENABLED=true            # Optional, defaults to true when ZHIPU_API_K
 ZHIPU_API_KEY=your_zhipu_api_key    # Optional, enables the AI summary block at the top
 ZHIPU_API_HOST=https://open.bigmodel.cn/api/paas/v4/chat/completions
 ZHIPU_MODEL=glm-4.7-flash           # Optional
-AI_SUMMARY_MAX_ITEMS=30             # Optional, max RSS entries sent to the summary prompt
-AI_SUMMARY_DESCRIPTION_CHARS=300    # Optional, max description characters per entry for summary input
+AI_SUMMARY_MAX_ITEMS=30             # Optional, fallback max RSS entries per uncapped category in the summary prompt
+AI_SUMMARY_DESCRIPTION_CHARS=160    # Optional, max description characters per entry for summary input
 ```
 
 3) Run once manually to verify
@@ -52,6 +52,7 @@ python rss_mailer/runner.py
 - The email also includes a plain-text backup in case some clients skip HTML.
 - RSS feeds can be grouped into sections with `RSS_FEEDS="Category|Name|URL"`. The HTML email renders jump tags for both category sections and individual feed names. Most modern email clients support these in-email anchor links, but some clients may ignore them.
 - Set `ZHIPU_API_KEY` to generate an English AI summary card before the RSS sections. The AI prompt only includes each entry's title and a truncated description excerpt. If the Zhipu request fails, the script logs the error and still sends the normal RSS digest.
+- AI summary input uses category caps: `Big Three` is capped at 10 entries, `AI Business` is capped at 5 entries, and `AI Technology` is capped at 3 entries.
 - By default it only sends RSS entries published on the previous UTC day; set `DIGEST_FREQUENCY=weekly` to cover the last seven days instead. If nothing matches, the email notes it is empty.
 
 ## Docker deployment

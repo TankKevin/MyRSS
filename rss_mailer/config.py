@@ -129,7 +129,7 @@ class Settings:
         )
         zhipu_model = os.getenv("ZHIPU_MODEL", "glm-4.7-flash")
         ai_summary_max_items = int(os.getenv("AI_SUMMARY_MAX_ITEMS", "30"))
-        ai_summary_description_chars = int(os.getenv("AI_SUMMARY_DESCRIPTION_CHARS", "300"))
+        ai_summary_description_chars = int(os.getenv("AI_SUMMARY_DESCRIPTION_CHARS", "160"))
 
         return cls(
             feeds=feeds,
