@@ -11,6 +11,7 @@ from .rss_fetcher import RssItem
 logger = logging.getLogger(__name__)
 
 FeedEntries = Iterable[Tuple[str, str, Iterable[RssItem]]]
+SummaryEntry = Tuple[str, str, RssItem]
 AI_SUMMARY_CATEGORY_LIMITS = {
     "Big Three": 10,
     "AI Business": 5,
@@ -49,22 +50,44 @@ def _category_item_limit(category: str, max_items: int) -> int | None:
     return max_items
 
 
+def _select_summary_entries(feed_entries: FeedEntries, max_items: int) -> list[SummaryEntry]:
+    grouped_entries: dict[str, list[tuple[str, list[RssItem]]]] = {}
+    for category, feed_name, entries in feed_entries:
+        grouped_entries.setdefault(category, []).append((feed_name, list(entries)))
+
+    selected: list[SummaryEntry] = []
+    for category, feed_blocks in grouped_entries.items():
+        category_limit = _category_item_limit(category, max_items)
+        selected_count = 0
+        cursors = [0 for _feed_name, _entries in feed_blocks]
+        while category_limit is None or selected_count < category_limit:
+            added_in_round = False
+            for index, (feed_name, entries) in enumerate(feed_blocks):
+                if category_limit is not None and selected_count >= category_limit:
+                    break
+                if cursors[index] >= len(entries):
+                    continue
+                selected.append((category, feed_name, entries[cursors[index]]))
+                cursors[index] += 1
+                selected_count += 1
+                added_in_round = True
+            if not added_in_round:
+                break
+    return selected
+
+
 def _entry_lines(feed_entries: FeedEntries, max_items: int, description_chars: int) -> list[str]:
     lines: list[str] = []
-    category_counts: dict[str, int] = {}
-    for category, _feed_name, entries in feed_entries:
-        category_limit = _category_item_limit(category, max_items)
-        for item in entries:
-            category_count = category_counts.get(category, 0)
-            if category_limit is not None and category_count >= category_limit:
-                break
-            title = item.get("title") or "(no title)"
-            description = _truncate_text(_strip_html(item.get("summary")), description_chars)
-            if description:
-                lines.append(f"Title: {title}\nDescription excerpt: {description}")
-            else:
-                lines.append(f"Title: {title}\nDescription excerpt: ")
-            category_counts[category] = category_count + 1
+    for category, feed_name, item in _select_summary_entries(feed_entries, max_items):
+        title = item.get("title") or "(no title)"
+        description = _truncate_text(_strip_html(item.get("summary")), description_chars)
+        if description:
+            lines.append(
+                f"Area: {category}\nSource: {feed_name}\n"
+                f"Title: {title}\nDescription excerpt: {description}"
+            )
+        else:
+            lines.append(f"Area: {category}\nSource: {feed_name}\nTitle: {title}\nDescription excerpt: ")
     return lines
 
 
@@ -90,9 +113,11 @@ def build_summary_prompt(
         "Use only these tags: <p>, <ul>, <li>, <strong>.\n"
         "Do not include attributes, links, scripts, styles, markdown, or tables.\n"
         "Use this structure:\n"
-        "1. One <p> with one sentence overall trend.\n"
-        "2. One <ul> with 3-5 <li> items for the most important updates. Use <strong> for short labels.\n"
-        "3. One <p> with one short sentence on what to watch next.\n\n"
+        "1. One <p> with one sentence overall trend across all areas.\n"
+        "2. For each area with entries, add one <p><strong>{exact area name}:</strong> short area summary.</p>, "
+        "then one <ul> with 1-3 <li> highlights for that area.\n"
+        "3. Areas must stay separate and use these names when present: Big Three, AI Business, AI Technology.\n"
+        "4. One final <p> with one short sentence on what to watch next.\n\n"
         f"Digest window: {target_date}\n"
         f"RSS entries:\n{entries_text}"
     )
